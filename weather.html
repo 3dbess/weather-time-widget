@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  background: transparent;
+  font-family: "Space Grotesk", sans-serif;
+  color: white;
+}
+
+/* OVERLAY */
+#overlay {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  padding: 18px 22px;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  text-align: right;
+  line-height: 1.45;
+}
+
+/* TIME */
+#time {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+#info {
+  font-size: 16px;
+  font-weight: 500;
+  height: 26px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  white-space: nowrap;
+}
+
+
+#date {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="overlay">
+  <div id="time">--:--</div>
+
+  <div id="info">Loading...</div>
+
+  <div id="date"></div>
+</div>
+
+<script>
+const apiKey = "4fbfbee094522ff107f5ca8ec2d0dfd1"; //RETRIEVE YOUR API KEY FROM OPENWEATHER API
+const city = "Cebu City"; //RENAME TO YOUR CITY
+
+let currentTemp = "--";
+let currentDescription = "";
+let currentEmoji = "☁";
+
+let showingWeather = true;
+let toggleStarted = false;
+
+/* WEATHER SYMBOLS */
+function weatherEmoji(main){
+  switch(main){
+    case "Clear": return "☀";
+    case "Clouds": return "☁";
+    case "Rain": return "🌧";
+    case "Drizzle": return "🌦";
+    case "Thunderstorm": return "⛈";
+    case "Snow": return "❄";
+    case "Mist":
+    case "Fog":
+    case "Haze": return "🌫";
+    default: return "☁";
+  }
+}
+
+/* WEATHER + TIME */
+function updateOverlay(){
+  const now = new Date();
+
+  const time = now.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  const date = now.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  document.getElementById("time").innerText = time;
+  document.getElementById("date").innerText = date;
+}
+
+
+function setInfoText(){
+  const info = document.getElementById("info");
+
+  // fade out
+  info.style.opacity = 0;
+  info.style.transform = "translateY(6px)";
+
+  setTimeout(() => {
+    if(showingWeather){
+      info.innerText = "Cebu City, Philippines";
+    } else {
+      info.innerText =
+        `${currentEmoji} ${currentTemp}°C • ${currentDescription}`;
+    }
+
+    // fade back in
+    info.style.opacity = 1;
+    info.style.transform = "translateY(0)";
+
+    showingWeather = !showingWeather;
+  }, 300);
+}
+
+/* WEATHER FETCH */
+async function getWeather(){
+  try{
+    const res = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
+    );
+
+    const data = await res.json();
+
+    currentTemp = Math.round(data.main.temp);
+    currentDescription = data.weather[0].description
+      .replace(/\b\w/g, l => l.toUpperCase());
+
+    currentEmoji = weatherEmoji(data.weather[0].main);
+
+    updateOverlay();
+
+
+    if(!toggleStarted){
+      toggleStarted = true;
+
+      // show weather first
+      showingWeather = false;
+      setInfoText();
+
+      setTimeout(() => {
+        setInterval(setInfoText, 5000);
+      }, 4000);
+    }
+
+  } catch(err){
+    console.log("Weather fetch error:", err);
+  }
+}
+
+/* INIT */
+getWeather();
+updateOverlay();
+
+/* LOOPS */
+setInterval(updateOverlay, 1000);
+setInterval(getWeather, 600000);
+
+</script>
+
+</body>
+</html>
+
